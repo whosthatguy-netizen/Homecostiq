@@ -26,11 +26,13 @@ const CartFields = `
           id
           title
           availableForSale
+          requiresShipping
           selectedOptions { name value }
           price { amount currencyCode }
           product {
             title
             handle
+            isGiftCard
             featuredImage { url altText width height }
           }
         }
@@ -44,7 +46,7 @@ const CART_CREATE = `mutation QuirkelloCartCreate($lines: [CartLineInput!]) { ca
 const CART_ADD = `mutation QuirkelloCartAdd($cartId: ID!, $lines: [CartLineInput!]!) { cartLinesAdd(cartId: $cartId, lines: $lines) { cart { ${CartFields} } userErrors { message } } }`
 const CART_UPDATE = `mutation QuirkelloCartUpdate($cartId: ID!, $lines: [CartLineUpdateInput!]!) { cartLinesUpdate(cartId: $cartId, lines: $lines) { cart { ${CartFields} } userErrors { message } } }`
 const CART_REMOVE = `mutation QuirkelloCartRemove($cartId: ID!, $lineIds: [ID!]!) { cartLinesRemove(cartId: $cartId, lineIds: $lineIds) { cart { ${CartFields} } userErrors { message } } }`
-const VARIANT_CHECK = `query QuirkelloVariantCheck($id: ID!) { node(id: $id) { ... on ProductVariant { product { id tags } } } }`
+const VARIANT_CHECK = `query QuirkelloVariantCheck($id: ID!) { node(id: $id) { ... on ProductVariant { requiresShipping product { id tags isGiftCard } } } }`
 const CART_QUANTITIES = `query QuirkelloCartQuantities($cartId: ID!) { cart(id: $cartId) { lines(first: 50) { nodes { id quantity merchandise { ... on ProductVariant { product { id } } } } } } }`
 
 const requestSchema = z.discriminatedUnion('intent', [
@@ -57,13 +59,18 @@ type MutationPayload = { cart: ShopifyCart | null; userErrors: { message: string
 
 function withCheckoutChannel(cart: ShopifyCart | null) {
   if (!cart) return null
+  const collectiveCheckoutEligible = cart.lines.nodes.every(
+    (line) => !line.merchandise.product.isGiftCard && line.merchandise.requiresShipping,
+  )
+  if (!collectiveCheckoutEligible) return { ...cart, checkoutUrl: '', collectiveCheckoutEligible: false }
+
   try {
     const url = new URL(cart.checkoutUrl)
-    if (url.protocol !== 'https:') return { ...cart, checkoutUrl: '' }
+    if (url.protocol !== 'https:') return { ...cart, checkoutUrl: '', collectiveCheckoutEligible: true }
     url.searchParams.set('channel', 'online_store')
-    return { ...cart, checkoutUrl: url.toString() }
+    return { ...cart, checkoutUrl: url.toString(), collectiveCheckoutEligible: true }
   } catch {
-    return { ...cart, checkoutUrl: '' }
+    return { ...cart, checkoutUrl: '', collectiveCheckoutEligible: true }
   }
 }
 
@@ -136,13 +143,15 @@ export async function POST(request: Request) {
     let userErrors: { message: string }[] = []
 
     if (change.intent === 'add') {
-      const productData = await requestStorefront<{ node: { product: { id: string; tags: string[] } } | null }>(
-        VARIANT_CHECK,
-        { id: change.variantId },
-        'no-store',
-      )
-      const product = productData.node?.product
+      const productData = await requestStorefront<{
+        node: { requiresShipping: boolean; product: { id: string; tags: string[]; isGiftCard: boolean } } | null
+      }>(VARIANT_CHECK, { id: change.variantId }, 'no-store')
+      const variant = productData.node
+      const product = variant?.product
       if (!product) return NextResponse.json({ error: 'That product variant is no longer available.' }, { status: 404 })
+      if (product.isGiftCard || !variant.requiresShipping) {
+        return NextResponse.json({ error: 'Shopify Collective checkout is only available for physical products.' }, { status: 409 })
+      }
       const tags = product.tags
       if (tags.some((tag) => ['demo', 'sample', 'not-for-sale', 'pending-verification'].includes(tag.trim().toLowerCase()))) {
         return NextResponse.json({ error: 'This demo listing is not available for purchase.' }, { status: 409 })

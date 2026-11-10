@@ -1,7 +1,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { ArrowDown, ArrowRight, ArrowUpRight, CirclePlay, Sparkles } from 'lucide-react'
-import type { CatalogResult, ShopifyProduct } from '@/lib/shopify/storefront'
+import { isCollectiveEligibleProduct, type CatalogResult, type ShopifyProduct } from '@/lib/shopify/storefront'
 import { getShopifyVideo } from '@/lib/shopify/presentation'
 import { ProductCard } from '@/components/quirkello/product-card'
 import { GiftFinder } from '@/components/quirkello/gift-finder'
@@ -14,7 +14,7 @@ const categories = [
 ]
 
 export function StorefrontHome({ catalog }: { catalog: CatalogResult }) {
-  const liveProducts = catalog.products.filter((product) => !product.tags.some((tag) => ['demo', 'sample', 'not-for-sale', 'pending-verification'].includes(tag.trim().toLowerCase())))
+  const liveProducts = catalog.products.filter((product) => isCollectiveEligibleProduct(product) && !product.tags.some((tag) => ['demo', 'sample', 'not-for-sale', 'pending-verification'].includes(tag.trim().toLowerCase())))
   const inStock = liveProducts.filter((product) => product.availableForSale)
   const under25 = inStock.filter((product) => Number(product.priceRange.minVariantPrice.amount) < 25)
   const under50 = inStock.filter((product) => Number(product.priceRange.minVariantPrice.amount) < 50)
@@ -64,7 +64,7 @@ export function StorefrontHome({ catalog }: { catalog: CatalogResult }) {
       <section id="shop-the-finds" className="scroll-mt-28 bg-muted/55 py-16 sm:py-20">
         <div className="mx-auto max-w-7xl px-5 sm:px-8">
           <SectionHeading eyebrow="Shop the finds" title="The things that make you look twice." description="Every product, price, option, and stock status comes from the connected Shopify catalog." />
-          {catalog.status !== 'ready' || !catalog.products.length ? <CatalogNotice status={catalog.status} /> : (
+          {catalog.status !== 'ready' || !catalog.products.length ? <CatalogNotice status={catalog.status} excludedProductCount={catalog.excludedProductCount} /> : (
             <div className="mt-8 grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4">
               {inStock.slice(0, 8).map((product) => <ProductCard key={product.id} product={product} />)}
               {!inStock.length && <p className="col-span-full rounded-2xl border border-border bg-background p-6 text-sm text-muted-foreground">The live Shopify catalog has products, but none are currently available for sale.</p>}
@@ -153,12 +153,14 @@ function SectionHeading({ eyebrow, title, description, inverse = false }: { eyeb
   )
 }
 
-function CatalogNotice({ status }: { status: CatalogResult['status'] }) {
+function CatalogNotice({ status, excludedProductCount }: { status: CatalogResult['status']; excludedProductCount: number }) {
   const copy = status === 'not-configured'
     ? ['The shelves are being set.', 'The live Shopify catalog will appear here as soon as Storefront access is ready. We do not use invented listings or prices.']
     : status === 'error'
       ? ['The live shelves are taking a moment.', 'We could not load the Shopify catalog just now. Please refresh in a moment.']
-      : ['First finds are on the way.', 'The Shopify catalog is empty right now. Real listings will appear here once the products, images, prices, and availability are verified.']
+      : excludedProductCount > 0
+        ? ['Only physical finds belong here.', 'Shopify Collective doesn’t support gift cards or non-shippable items. Those listings are excluded; eligible products will appear when published in Shopify.']
+        : ['First finds are on the way.', 'No eligible products are published to the connected Shopify storefront yet. Import eligible physical products through Shopify Collective, then publish them to the Online Store channel to show their live prices and availability here.']
   return (
     <div className="mt-8 flex flex-col gap-5 rounded-[1.75rem] border border-border bg-background p-6 sm:flex-row sm:items-center sm:justify-between sm:p-8">
       <div><p className="text-xs font-bold uppercase tracking-[0.15em] text-secondary">Catalog status</p><h3 className="mt-2 font-serif text-3xl">{copy[0]}</h3><p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">{copy[1]}</p></div>

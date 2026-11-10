@@ -15,6 +15,7 @@ export type ShopifyVariant = {
   title: string
   sku: string | null
   availableForSale: boolean
+  requiresShipping: boolean
   price: Money
   selectedOptions: { name: string; value: string }[]
   image: ShopifyImage | null
@@ -43,6 +44,7 @@ export type ShopifyProduct = {
   descriptionHtml: string
   vendor: string
   productType: string
+  isGiftCard: boolean
   tags: string[]
   availableForSale: boolean
   createdAt: string
@@ -72,11 +74,13 @@ export type ShopifyCartLine = {
     id: string
     title: string
     availableForSale: boolean
+    requiresShipping: boolean
     selectedOptions: { name: string; value: string }[]
     price: Money
     product: {
       title: string
       handle: string
+      isGiftCard: boolean
       featuredImage: ShopifyImage | null
     }
   }
@@ -88,6 +92,7 @@ export type ShopifyCart = {
   totalQuantity: number
   cost: { subtotalAmount: Money; totalAmount: Money }
   lines: { nodes: ShopifyCartLine[] }
+  collectiveCheckoutEligible?: boolean
 }
 
 export type StorefrontStatus = 'ready' | 'not-configured' | 'error'
@@ -96,6 +101,7 @@ export type CatalogResult = {
   status: StorefrontStatus
   products: ShopifyProduct[]
   collections: ShopifyCollection[]
+  excludedProductCount: number
 }
 
 export type ProductResult = {
@@ -133,6 +139,7 @@ const PRODUCT_FIELDS = `
   descriptionHtml
   vendor
   productType
+  isGiftCard
   tags
   availableForSale
   createdAt
@@ -148,6 +155,7 @@ const PRODUCT_FIELDS = `
       title
       sku
       availableForSale
+      requiresShipping
       price { amount currencyCode }
       selectedOptions { name value }
       image { url altText width height }
@@ -179,7 +187,7 @@ const HOME_QUERY = `
         title
         description
         image { url altText width height }
-        products(first: 4) { nodes { id handle title description vendor productType tags availableForSale createdAt featuredImage { url altText width height } images(first: 1) { nodes { url altText width height } } priceRange { minVariantPrice { amount currencyCode } maxVariantPrice { amount currencyCode } } variants(first: 1) { nodes { id title sku availableForSale price { amount currencyCode } selectedOptions { name value } image { url altText width height } } } media(first: 1) { nodes { __typename id mediaContentType ... on Video { alt previewImage { url altText width height } sources { url mimeType format } } } } } }
+        products(first: 4) { nodes { id handle title description vendor productType isGiftCard tags availableForSale createdAt featuredImage { url altText width height } images(first: 1) { nodes { url altText width height } } priceRange { minVariantPrice { amount currencyCode } maxVariantPrice { amount currencyCode } } variants(first: 1) { nodes { id title sku availableForSale requiresShipping price { amount currencyCode } selectedOptions { name value } image { url altText width height } } } media(first: 1) { nodes { __typename id mediaContentType ... on Video { alt previewImage { url altText width height } sources { url mimeType format } } } } } }
       }
     }
   }
@@ -289,7 +297,7 @@ export async function requestStorefront<T>(
 
 export async function getHomeCatalog(): Promise<CatalogResult> {
   if (!isStorefrontConfigured()) {
-    return { status: 'not-configured', products: [], collections: [] }
+    return { status: 'not-configured', products: [], collections: [], excludedProductCount: 0 }
   }
 
   try {
@@ -297,13 +305,18 @@ export async function getHomeCatalog(): Promise<CatalogResult> {
       products: { nodes: ShopifyProduct[] }
       collections: { nodes: ShopifyCollection[] }
     }>(HOME_QUERY)
+    const products = data.products.nodes.filter(isCollectiveEligibleProduct)
     return {
       status: 'ready',
-      products: data.products.nodes,
-      collections: data.collections.nodes,
+      products,
+      collections: data.collections.nodes.map((collection) => ({
+        ...collection,
+        products: { nodes: collection.products.nodes.filter(isCollectiveEligibleProduct) },
+      })),
+      excludedProductCount: data.products.nodes.length - products.length,
     }
   } catch {
-    return { status: 'error', products: [], collections: [] }
+    return { status: 'error', products: [], collections: [], excludedProductCount: 0 }
   }
 }
 
@@ -313,8 +326,10 @@ export async function getProductByHandle(handle: string): Promise<ProductResult>
   }
 
   try {
-    const data = await requestStorefront<{ product: ShopifyProduct | null }>(PRODUCT_QUERY, { handle })
-    if (!data.product) return { status: 'ready', product: null, recommendations: [] }
+    const data = await requestStorefront<{ product: ShopifyProduct | null     }>(PRODUCT_QUERY, { handle })
+    if (!data.product || !isCollectiveEligibleProduct(data.product)) {
+      return { status: 'ready', product: null, recommendations: [] }
+    }
 
     const recommendations = await requestStorefront<{ productRecommendations: ShopifyProduct[] }>(
       RECOMMENDATIONS_QUERY,
@@ -324,7 +339,7 @@ export async function getProductByHandle(handle: string): Promise<ProductResult>
     return {
       status: 'ready',
       product: data.product,
-      recommendations: recommendations.productRecommendations,
+      recommendations: recommendations.productRecommendations.filter(isCollectiveEligibleProduct),
     }
   } catch {
     return { status: 'error', product: null, recommendations: [] }
@@ -336,7 +351,12 @@ export async function getCollectionByHandle(handle: string): Promise<CollectionR
 
   try {
     const data = await requestStorefront<{ collection: ShopifyCollection | null }>(COLLECTION_QUERY, { handle })
-    return { status: 'ready', collection: data.collection }
+    return {
+      status: 'ready',
+      collection: data.collection
+        ? { ...data.collection, products: { nodes: data.collection.products.nodes.filter(isCollectiveEligibleProduct) } }
+        : null,
+    }
   } catch {
     return { status: 'error', collection: null }
   }
@@ -354,9 +374,10 @@ export async function searchProducts(term: string): Promise<{ status: Storefront
     const data = await requestStorefront<{ products: { nodes: ShopifyProduct[] } }>(SEARCH_QUERY, {
       term: storefrontQuery,
     })
+    const eligibleProducts = data.products.nodes.filter(isCollectiveEligibleProduct)
     const products = underBudget
-      ? data.products.nodes.filter((product) => Number(product.priceRange.minVariantPrice.amount) < Number(underBudget[1]))
-      : data.products.nodes
+      ? eligibleProducts.filter((product) => Number(product.priceRange.minVariantPrice.amount) < Number(underBudget[1]))
+      : eligibleProducts
     return { status: 'ready', products }
   } catch {
     return { status: 'error', products: [] }
@@ -375,6 +396,10 @@ export async function getShopPolicies(): Promise<{
   } catch {
     return { status: 'error', policies: null }
   }
+}
+
+export function isCollectiveEligibleProduct(product: Pick<ShopifyProduct, 'isGiftCard' | 'variants'>) {
+  return !product.isGiftCard && product.variants.nodes.length > 0 && product.variants.nodes.every((variant) => variant.requiresShipping)
 }
 
 export function isDemoProduct(product: Pick<ShopifyProduct, 'tags'>) {

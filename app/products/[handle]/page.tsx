@@ -27,7 +27,7 @@ export default async function ProductPage({ params }: { params: Promise<{ handle
   const result = await getProductByHandle(handle)
 
   if (result.status === 'ready' && !result.product) {
-    return <Unavailable title="That find isn&rsquo;t on the shelf." description="This product is not currently published in the Shopify catalog." />
+    return <Unavailable title="That find isn&rsquo;t on the shelf." description="This product is not available in the live catalog. Shopify Collective storefronts only show eligible physical products." />
   }
   if (!result.product) {
     return <Unavailable title="The live product details are unavailable." description="Shopify Storefront access is not ready in this environment. No sample product data is being shown." />

@@ -121,8 +121,8 @@ export function CartDialog() {
               <span>Subtotal</span>
               <span>{formatMoney(cart.cost.subtotalAmount)}</span>
             </div>
-            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">Shipping and taxes are confirmed by Shopify at checkout.</p>
-            <button type="button" onClick={checkout} className="mt-5 flex min-h-14 w-full items-center justify-center gap-2 rounded-full bg-primary px-6 font-semibold text-primary-foreground transition hover:bg-secondary">
+            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{cart.collectiveCheckoutEligible === false ? 'Remove gift cards or non-shippable items to continue. Shopify Collective checkout supports physical products only.' : 'Shipping and taxes are confirmed by Shopify at checkout.'}</p>
+            <button type="button" onClick={checkout} disabled={!cart.checkoutUrl} className="mt-5 flex min-h-14 w-full items-center justify-center gap-2 rounded-full bg-primary px-6 font-semibold text-primary-foreground transition hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-50">
               Continue to secure checkout <ArrowRight className="size-4" aria-hidden="true" />
             </button>
             <p className="mt-3 text-center text-xs text-muted-foreground">Checkout and payment are handled by Shopify.</p>
