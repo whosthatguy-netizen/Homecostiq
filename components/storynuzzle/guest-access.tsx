@@ -16,7 +16,9 @@ export function GuestAccess() {
     const { data, error } = await createClient().auth.signInAnonymously()
 
     if (error || !data.session) {
-      setMessage('We could not open your book right now. Please try again.')
+      setMessage(error?.code === 'anonymous_provider_disabled'
+        ? 'Anonymous book sessions are not enabled for this project yet. Please enable Anonymous Sign-Ins in the project’s Supabase Auth settings.'
+        : 'We could not open your book right now. Please try again.')
       setBusy(false)
       return
     }
