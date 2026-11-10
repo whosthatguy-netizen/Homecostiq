@@ -27,7 +27,7 @@ export async function GET(_request: Request, { params }: Context) {
     .eq('owner_id', user.id)
     .maybeSingle()
 
-  if (bookError || !book) return NextResponse.json({ error: 'This book is not available in this guardian account.' }, { status: 404 })
+  if (bookError || !book) return NextResponse.json({ error: 'This book is not available in this session.' }, { status: 404 })
 
   const { data: rows } = await supabase
     .from('story_book_pages')
@@ -72,7 +72,7 @@ export async function DELETE(_request: Request, { params }: Context) {
     .eq('id', id)
     .eq('owner_id', user.id)
     .maybeSingle()
-  if (!book) return NextResponse.json({ error: 'This book is not available in this guardian account.' }, { status: 404 })
+  if (!book) return NextResponse.json({ error: 'This book is not available in this session.' }, { status: 404 })
 
   const { data: pages } = await supabase.from('story_book_pages').select('illustration_path').eq('book_id', id)
   const admin = createAdminClient()

@@ -16,9 +16,7 @@ export function GuestAccess() {
     const { data, error } = await createClient().auth.signInAnonymously()
 
     if (error || !data.session) {
-      setMessage(error?.code === 'anonymous_provider_disabled'
-        ? 'Guest access is unavailable right now. Please use guardian sign-in instead.'
-        : 'We could not open a private guest session. Please try again.')
+      setMessage('We could not open your book right now. Please try again.')
       setBusy(false)
       return
     }
@@ -34,7 +32,7 @@ export function GuestAccess() {
         disabled={busy}
         className="inline-flex min-h-12 items-center justify-center rounded-full bg-primary px-6 py-3 font-bold text-primary-foreground transition hover:opacity-90 disabled:cursor-wait disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
       >
-        {busy ? 'Opening your book nook…' : 'Start without an account'}
+        {busy ? 'Getting your book ready…' : 'Create a book'}
       </button>
       {message && <p role="alert" className="max-w-xs text-sm leading-relaxed text-foreground/75">{message}</p>}
     </div>

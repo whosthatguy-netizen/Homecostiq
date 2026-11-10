@@ -24,7 +24,7 @@ type StudioConfig = { ready: boolean; mode: 'live' | 'unavailable'; model: strin
 
 async function fetcher(url: string) {
   const response = await fetch(url, { cache: 'no-store' })
-  if (!response.ok) throw new Error(response.status === 404 ? 'This book is not available in this guardian account.' : 'We could not load this book.')
+  if (!response.ok) throw new Error(response.status === 404 ? 'This book is not available in this session.' : 'We could not load this book.')
   return response.json()
 }
 
@@ -119,7 +119,7 @@ export function BookProject({ bookId }: { bookId: string }) {
               <div role="progressbar" aria-label="Book generation progress" aria-valuemin={0} aria-valuemax={100} aria-valuenow={book.progress} className="h-2 overflow-hidden rounded-full bg-muted">
                 <div className="h-full rounded-full bg-primary transition-[width] duration-500" style={{ width: `${book.progress}%` }} />
               </div>
-              <p className="mt-3 text-sm leading-relaxed text-foreground/70">You can leave and come back; your progress is saved to your account.</p>
+              <p className="mt-3 text-sm leading-relaxed text-foreground/70">You can leave and come back; your progress is saved privately.</p>
             </div>
           )}
           {actionError && <p role="alert" className="mt-5 rounded-xl bg-muted px-4 py-3 text-sm leading-relaxed">{actionError}</p>}

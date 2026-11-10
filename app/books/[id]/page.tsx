@@ -18,7 +18,7 @@ export default async function BookPage({ params }: Props) {
     .eq('owner_id', user.id)
     .maybeSingle()
   if (!book) {
-    return <main className="min-h-screen px-5 py-16 text-center"><h1 className="font-serif text-4xl">That book isn&apos;t on this shelf</h1><p className="mt-3 text-foreground/70">Books can only be opened by the guardian account that created them.</p><Link href="/" className="mt-6 inline-block font-semibold text-primary underline underline-offset-4">Return to your shelf</Link></main>
+    return <main className="min-h-screen px-5 py-16 text-center"><h1 className="font-serif text-4xl">That book isn&apos;t on this shelf</h1><p className="mt-3 text-foreground/70">This book is only available in the session that created it.</p><Link href="/" className="mt-6 inline-block font-semibold text-primary underline underline-offset-4">Return to your shelf</Link></main>
   }
 
   return <BookProject bookId={book.id} />

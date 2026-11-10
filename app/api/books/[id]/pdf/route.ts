@@ -46,7 +46,7 @@ export async function GET(_request: Request, { params }: Context) {
     .eq('id', id)
     .eq('owner_id', user.id)
     .maybeSingle()
-  if (!book) return NextResponse.json({ error: 'This book is not available in this guardian account.' }, { status: 404 })
+  if (!book) return NextResponse.json({ error: 'This book is not available in this session.' }, { status: 404 })
   if (book.status !== 'completed' || book.stage !== 'story' || !book.character_approved_at || !book.character_path) {
     return NextResponse.json({ error: 'Finish the four-scene story before downloading its PDF.' }, { status: 409 })
   }

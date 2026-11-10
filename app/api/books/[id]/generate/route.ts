@@ -21,7 +21,7 @@ export async function POST(request: Request, { params }: Context) {
     .eq('id', id)
     .eq('owner_id', user.id)
     .maybeSingle()
-  if (!book) return NextResponse.json({ error: 'This book is not available in this guardian account.' }, { status: 404 })
+  if (!book) return NextResponse.json({ error: 'This book is not available in this session.' }, { status: 404 })
 
   const admin = createAdminClient()
   const body = await request.json().catch(() => null)
