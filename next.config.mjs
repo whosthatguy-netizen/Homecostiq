@@ -1,8 +1,8 @@
-import { withWorkflow } from 'workflow/next'
-
 const nextConfig = {
   images: {
-    unoptimized: true,
+    remotePatterns: [
+      { protocol: 'https', hostname: 'cdn.shopify.com' },
+    ],
   },
   async headers() {
     return [{
@@ -18,4 +18,4 @@ const nextConfig = {
   },
 }
 
-export default withWorkflow(nextConfig)
+export default nextConfig

@@ -37,22 +37,23 @@
 
 :root {
   color-scheme: light;
-  --background: #fbfaf5;
-  --foreground: #23342d;
-  --card: #fbfaf5;
-  --primary: #28685b;
-  --primary-foreground: #ffffff;
-  --secondary: #fbfaf5;
-  --secondary-foreground: #23342d;
-  --muted: #f1f3ed;
-  --muted-foreground: #23342d;
-  --accent: #e1ad47;
-  --accent-foreground: #23342d;
-  --destructive: #28685b;
-  --border: color-mix(in srgb, #23342d 14%, #fbfaf5);
-  --input: color-mix(in srgb, #23342d 14%, #fbfaf5);
-  --ring: #28685b;
-  --radius: 1rem;
+  --background: #f8f5ed;
+  --foreground: #172b48;
+  --card: #f8f5ed;
+  --card-foreground: #172b48;
+  --primary: #172b48;
+  --primary-foreground: #f8f5ed;
+  --secondary: #436df5;
+  --secondary-foreground: #f8f5ed;
+  --muted: color-mix(in srgb, #436df5 8%, #f8f5ed);
+  --muted-foreground: color-mix(in srgb, #172b48 68%, #f8f5ed);
+  --accent: #ffcc69;
+  --accent-foreground: #172b48;
+  --destructive: #172b48;
+  --border: color-mix(in srgb, #172b48 14%, #f8f5ed);
+  --input: color-mix(in srgb, #172b48 16%, #f8f5ed);
+  --ring: #436df5;
+  --radius: 1.125rem;
 }
 
 * {
@@ -61,6 +62,7 @@
 
 html {
   background: var(--background);
+  scroll-behavior: smooth;
 }
 
 body {
@@ -83,5 +85,64 @@ select {
 }
 
 :focus-visible {
-  outline-color: var(--primary);
+  outline: 3px solid var(--ring);
+  outline-offset: 3px;
+}
+
+.policy-content {
+  color: var(--muted-foreground);
+  line-height: 1.75;
+  overflow-wrap: anywhere;
+}
+
+.policy-content :where(p, ul, ol, div) {
+  margin-block-start: 1rem;
+}
+
+.policy-content :where(h1, h2, h3, h4) {
+  margin-block-start: 2rem;
+  color: var(--foreground);
+  font-family: var(--font-fraunces), Georgia, serif;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.policy-content :where(h1, h2) {
+  font-size: 1.5rem;
+}
+
+.policy-content :where(ul, ol) {
+  padding-inline-start: 1.5rem;
+}
+
+.policy-content ul {
+  list-style: disc;
+}
+
+.policy-content ol {
+  list-style: decimal;
+}
+
+.policy-content a {
+  color: var(--secondary);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.policy-content strong {
+  color: var(--foreground);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
