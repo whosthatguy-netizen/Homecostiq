@@ -10,13 +10,11 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 type Context = { params: Promise<{ id: string }> }
 
-export async function POST(_request: Request, { params }: Context) {
+export async function POST(request: Request, { params }: Context) {
   const { id } = await params
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Sign in to generate a book.' }, { status: 401 })
-  if (!process.env.OPENAI_API_KEY) return NextResponse.json({ error: 'Live image generation is not configured.' }, { status: 503 })
-
   const { data: book } = await supabase
     .from('story_books')
     .select('id, owner_id, stage, status, character_path, character_approved_at, progress')
@@ -26,6 +24,8 @@ export async function POST(_request: Request, { params }: Context) {
   if (!book) return NextResponse.json({ error: 'This book is not available in this guardian account.' }, { status: 404 })
 
   const admin = createAdminClient()
+  const body = await request.json().catch(() => null)
+  const retryPortrait = typeof body === 'object' && body !== null && 'retry' in body && body.retry === true
   const phase = book.stage as 'character' | 'story'
   if (phase === 'story' && !book.character_approved_at) {
     return NextResponse.json({ error: 'Approve the character portrait before creating story illustrations.' }, { status: 409 })
@@ -39,6 +39,9 @@ export async function POST(_request: Request, { params }: Context) {
   }
   if (phase === 'story' && book.status === 'completed') {
     return NextResponse.json({ status: 'completed', message: 'This story is already complete.' })
+  }
+  if (phase === 'character' && book.status === 'completed' && !retryPortrait) {
+    return NextResponse.json({ status: 'completed', message: 'The portrait is ready for review.' })
   }
 
   const { data: latestJobs } = await admin

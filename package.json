@@ -5,6 +5,7 @@
   "packageManager": "pnpm@12.3.4",
   "scripts": {
     "dev": "next dev",
+    "test:e2e": "playwright test",
     "build": "next build",
     "start": "next start"
   },
@@ -15,11 +16,11 @@
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.119.0",
     "@vercel/analytics": "1.6.1",
+    "ai": "^7.0.165",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^1.16.0",
     "next": "16.4.3",
-    "openai": "^7.53.0",
     "pdf-lib": "^1.17.1",
     "react": "^19",
     "react-dom": "^19",
@@ -31,6 +32,7 @@
     "zod": "^4.6.7"
   },
   "devDependencies": {
+    "@playwright/test": "^1.65.0",
     "@tailwindcss/postcss": "^4.3.3",
     "@types/node": "^24",
     "@types/react": "^19",

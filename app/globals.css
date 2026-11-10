@@ -25,7 +25,7 @@
   --color-ring: var(--ring);
   --font-sans: var(--font-dm-sans);
   --font-serif: var(--font-fraunces);
-  --font-mono: var(--font-geist-mono);
+  --font-mono: var(--font-dm-sans);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -39,7 +39,7 @@
   color-scheme: light;
   --background: #fbfaf5;
   --foreground: #23342d;
-  --card: #ffffff;
+  --card: #fbfaf5;
   --primary: #28685b;
   --primary-foreground: #ffffff;
   --secondary: #fbfaf5;
@@ -49,8 +49,8 @@
   --accent: #e1ad47;
   --accent-foreground: #23342d;
   --destructive: #28685b;
-  --border: color-mix(in srgb, #23342d 14%, #ffffff);
-  --input: color-mix(in srgb, #23342d 14%, #ffffff);
+  --border: color-mix(in srgb, #23342d 14%, #fbfaf5);
+  --input: color-mix(in srgb, #23342d 14%, #fbfaf5);
   --ring: #28685b;
   --radius: 1rem;
 }

@@ -1,13 +1,11 @@
-import OpenAI from 'openai'
-import { toFile } from 'openai/uploads'
-import { createHash } from 'node:crypto'
+import { APICallError, generateImage, gateway } from 'ai'
 import { FatalError, RetryableError, getStepMetadata } from 'workflow'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { shouldRetryGeneration } from '@/lib/generation-failures'
 import type { PronounSet } from '@/lib/story'
 
 const BUCKET = 'storybook-assets'
-const MODEL = 'gpt-image-2.6-sunburst'
-const MAX_AUTOMATIC_ATTEMPTS = 3
+const MODEL = gateway.imageModel('openai/gpt-image-2.6-sunburst')
 
 type Phase = 'character' | 'story'
 type BookRow = {
@@ -19,28 +17,22 @@ type BookRow = {
   character_path: string | null
 }
 
-function openAiClient() {
-  const apiKey = process.env.OPENAI_API_KEY
-  if (!apiKey) throw new FatalError('Live image generation is not configured.')
-  return new OpenAI({ apiKey, maxRetries: 0, timeout: 180_000 })
-}
-
-async function imageEdit(source: Uint8Array, sourceName: string, contentType: string, prompt: string, safetyIdentifier: string) {
-  const file = await toFile(source, sourceName, { type: contentType })
-  const result = await openAiClient().images.edit({
+async function imageEdit(source: Uint8Array, prompt: string) {
+  const { image } = await generateImage({
     model: MODEL,
-    image: file,
-    prompt,
+    prompt: { images: [source], text: prompt },
     size: '1024x1024',
-    quality: 'high',
-    complexity: 'medium',
-    output_format: 'png',
-    background: 'opaque',
-    safety_identifier: safetyIdentifier,
+    maxRetries: 0,
+    abortSignal: AbortSignal.timeout(180_000),
+    providerOptions: {
+      openai: {
+        quality: 'high',
+        output_format: 'png',
+        background: 'opaque',
+      },
+    },
   })
-  const encoded = result.data?.[0]?.b64_json
-  if (!encoded) throw new Error('The image service returned no illustration.')
-  return Buffer.from(encoded, 'base64')
+  return Buffer.from(image.uint8Array)
 }
 
 async function updateFailureState(bookId: string, jobId: string, final: boolean) {
@@ -59,17 +51,17 @@ async function updateFailureState(bookId: string, jobId: string, final: boolean)
 
 async function recordStepFailure(bookId: string, jobId: string, error: unknown): Promise<never> {
   const metadata = getStepMetadata()
-  const status = typeof error === 'object' && error !== null && 'status' in error ? Number(error.status) : null
-  const permanentClientError = Boolean(status && status >= 400 && status < 500 && status !== 429)
-  const final = permanentClientError || metadata.attempt >= MAX_AUTOMATIC_ATTEMPTS
+  const shouldRetry = shouldRetryGeneration(error, metadata.attempt)
+  const permanentProviderError = APICallError.isInstance(error) && !error.isRetryable
+  const final = !shouldRetry
   await updateFailureState(bookId, jobId, final)
 
-  if (permanentClientError) throw new FatalError('The image service rejected this request.')
+  if (permanentProviderError) throw new FatalError('The image service rejected this request.')
   if (!final) {
     const delay = Math.min(30_000, metadata.attempt * 5_000)
     throw new RetryableError('Image generation will retry.', { retryAfter: delay })
   }
-  throw error instanceof Error ? error : new Error('Image generation failed.')
+  throw new FatalError('Image generation failed after the automatic retry limit.')
 }
 
 async function loadBook(bookId: string): Promise<BookRow> {
@@ -109,7 +101,7 @@ export async function generateStoryWorkflow(bookId: string, phase: Phase, attemp
     await completeStory(bookId, jobId)
     return { status: 'story_ready' }
   } catch (error) {
-    await markWorkflowFailed(bookId, jobId)
+    if (!(error instanceof RetryableError)) await markWorkflowFailed(bookId, jobId)
     throw error
   }
 }
@@ -121,24 +113,18 @@ async function createCharacter(bookId: string, jobId: string) {
   const admin = createAdminClient()
   const { data: photo, error: photoError } = await admin.storage.from(BUCKET).download(book.photo_path)
   if (photoError || !photo) throw new FatalError('The original photo is no longer available.')
-  const mime = book.photo_path.endsWith('.png') ? 'image/png' : book.photo_path.endsWith('.webp') ? 'image/webp' : 'image/jpeg'
-  const extension = mime === 'image/png' ? 'png' : mime === 'image/webp' ? 'webp' : 'jpg'
-  const safetyIdentifier = createHash('sha256').update(book.owner_id).digest('hex')
   let image: Buffer
 
   try {
     image = await imageEdit(
       new Uint8Array(await photo.arrayBuffer()),
-      `reference.${extension}`,
-      mime,
       `Create one polished children's picture-book character portrait based on the child in the provided reference photo. Preserve their recognizable facial features, skin tone, hair, and age-appropriate appearance while rendering them as a gentle hand-painted gouache and colored-pencil illustration. Show a friendly, natural expression, a simple yellow apron with a small red star, and a clean warm-white background. Keep the child fully clothed and the only person in the portrait. No words, lettering, logos, extra limbs, or watermark. This is a portrait illustration, not a photo.`,
-      safetyIdentifier,
     )
   } catch (error) {
     return recordStepFailure(bookId, jobId, error)
   }
 
-  const path = `${book.owner_id}/${book.id}/character/approved.png`
+  const path = `${book.owner_id}/${book.id}/character/portrait-${jobId}.png`
   await storeImage(path, image)
   const updates = await Promise.all([
     admin.from('story_books').update({
@@ -172,15 +158,11 @@ async function createScene(bookId: string, sceneNumber: number, jobId: string) {
   const { data: reference, error: referenceError } = await admin.storage.from(BUCKET).download(book.character_path)
   if (referenceError || !reference) throw new FatalError('The approved character portrait is unavailable.')
 
-  const safetyIdentifier = createHash('sha256').update(book.owner_id).digest('hex')
   let image: Buffer
   try {
     image = await imageEdit(
       new Uint8Array(await reference.arrayBuffer()),
-      'approved-character.png',
-      'image/png',
       `Create scene ${sceneNumber} of 4 in the same children's picture book. Use the supplied approved character portrait as the strict visual identity and art-style reference: keep the child's recognizable face, skin tone, hair, yellow apron with the small red star, proportions, and hand-painted gouache and colored-pencil style consistent. Illustrate this exact story beat: ${existingPage.scene_text} Setting: a bright cozy family kitchen, apples and safe baking ingredients, gentle daylight, joyful and calm mood. Keep the child fully clothed. Make a square story illustration with clear composition. Do not include any text, letters, signs, logos, extra limbs, or watermark.`,
-      safetyIdentifier,
     )
   } catch (error) {
     return recordStepFailure(bookId, jobId, error)

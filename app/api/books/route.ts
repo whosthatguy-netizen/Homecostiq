@@ -26,8 +26,6 @@ export async function POST(request: Request) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Sign in to create a private storybook.' }, { status: 401 })
-  if (!process.env.OPENAI_API_KEY) return NextResponse.json({ error: 'Live image generation is not configured.' }, { status: 503 })
-
   const formData = await request.formData()
   const parsed = formSchema.safeParse({
     firstName: formData.get('firstName'),

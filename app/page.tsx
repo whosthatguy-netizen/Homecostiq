@@ -62,16 +62,17 @@ export default async function HomePage() {
             <span className="rounded-full border border-border bg-card px-4 py-2">You choose the photo</span>
             <span className="rounded-full border border-border bg-card px-4 py-2">You approve the portrait</span>
             <span className="rounded-full border border-border bg-card px-4 py-2">Private by default</span>
+            <Link href="/demo" className="rounded-full border border-border px-4 py-2 text-primary underline underline-offset-4 transition hover:bg-card focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">Preview the read-only sample</Link>
           </div>
         </div>
 
         <div className="relative mx-auto w-full max-w-md md:mr-2">
           <div className="book-stage rounded-[2rem] bg-muted p-5 sm:p-8">
-            <div className="mx-auto flex aspect-[4/5] max-w-[19rem] flex-col items-center justify-between overflow-hidden rounded-[1.25rem] border border-border bg-card px-6 py-8 text-center shadow-[0_20px_40px_-24px_rgba(34,51,45,0.4)]">
+            <div className="mx-auto flex aspect-[2/3] max-w-[19rem] flex-col items-center justify-between overflow-hidden rounded-[1.25rem] border border-border bg-card px-6 py-8 text-center shadow-[0_20px_40px_-24px_rgba(34,51,45,0.4)]">
               <span className="text-xs font-bold uppercase tracking-[0.2em] text-primary">A StoryNuzzle book</span>
               <div className="flex flex-col items-center">
-                <Image src="/storynuzzle-cover.png" alt="A fictional child in a yellow apron making apple muffins" width={360} height={480} priority className="mb-5 aspect-[3/4] w-36 rounded-full border border-border object-cover" />
-                <p className="font-serif text-4xl leading-tight">The Little<br />Kitchen Helper</p>
+                <Image src="/storynuzzle-cover.png" alt="A fictional child in a yellow apron making apple muffins" width={320} height={426} priority className="mb-4 aspect-[3/4] w-32 rounded-full border border-border object-cover" />
+                <p className="font-serif text-3xl leading-tight">The Little<br />Kitchen Helper</p>
                 <p className="mt-4 text-sm text-foreground/70">A new favorite, with your child at the heart of it.</p>
               </div>
               <span className="rounded-full bg-accent px-4 py-2 text-xs font-bold text-foreground">Made to read together</span>

@@ -1,11 +1,10 @@
-import { DM_Sans, Fraunces, Geist_Mono } from 'next/font/google'
+import { DM_Sans, Fraunces } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
 
 const dmSans = DM_Sans({ subsets: ['latin'], variable: '--font-dm-sans' })
 const fraunces = Fraunces({ subsets: ['latin'], variable: '--font-fraunces' })
-const geistMono = Geist_Mono({ subsets: ['latin'], variable: '--font-geist-mono' })
 
 export const metadata: Metadata = {
   title: 'StoryNuzzle — A little story made just for them',
@@ -23,7 +22,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${dmSans.variable} ${fraunces.variable} ${geistMono.variable} bg-background`}>
+    <html lang="en" className={`${dmSans.variable} ${fraunces.variable} bg-background`}>
       <body className="font-sans antialiased">
         {children}
         {process.env.NODE_ENV === 'production' && <Analytics />}

@@ -13,6 +13,7 @@ type BookState = {
     progress: number
     attempts: number
     characterApproved: boolean
+    originalPhotoDeleted: boolean
     characterPath: string | null
     characterUrl: string | null
     updatedAt: string
@@ -46,11 +47,15 @@ export function BookProject({ bookId }: { bookId: string }) {
     return url
   }
 
-  async function runAction(url: string, method = 'POST') {
+  async function runAction(url: string, method = 'POST', payload?: { retry: boolean }) {
     setBusy(true)
     setActionError('')
     try {
-      const response = await fetch(url, { method })
+      const response = await fetch(url, {
+        method,
+        headers: payload ? { 'Content-Type': 'application/json' } : undefined,
+        body: payload ? JSON.stringify(payload) : undefined,
+      })
       const result = await response.json()
       if (!response.ok) throw new Error(result.error || 'We could not complete that step. Please try again.')
       await mutate()
@@ -125,9 +130,9 @@ export function BookProject({ bookId }: { bookId: string }) {
 
           {book.status === 'completed' && book.stage === 'character' && characterUrl && !book.characterApproved && (
             <div className="mt-6 space-y-3">
-              <p className="rounded-xl bg-muted px-4 py-3 text-sm leading-relaxed">Look closely at the character. Approve it to make the four story scenes, or retry this portrait first.</p>
+              <p className="rounded-xl bg-muted px-4 py-3 text-sm leading-relaxed">Look closely at the character. Approve it to make the four story scenes, or retry this portrait first. Your original photo is removed when you approve.</p>
               <button type="button" disabled={busy} onClick={approveCharacter} className="min-h-12 w-full rounded-full bg-primary px-5 py-3 font-bold text-primary-foreground hover:opacity-90 disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">Approve and remove original photo</button>
-              {config?.ready && <button type="button" disabled={busy || book.attempts >= 3} onClick={startGeneration} className="min-h-12 w-full rounded-full border border-border px-5 py-3 font-semibold hover:bg-muted disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">{book.attempts >= 3 ? 'Portrait retry limit reached' : 'Try a different portrait'}</button>}
+              {config?.ready && <button type="button" disabled={busy || book.attempts >= 3} onClick={() => runAction(`/api/books/${bookId}/generate`, 'POST', { retry: true })} className="min-h-12 w-full rounded-full border border-border px-5 py-3 font-semibold hover:bg-muted disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">{book.attempts >= 3 ? 'Portrait retry limit reached' : 'Try a different portrait'}</button>}
             </div>
           )}
 
@@ -144,7 +149,7 @@ export function BookProject({ bookId }: { bookId: string }) {
 
           {book.stage === 'story' && book.characterApproved && !reading && !config?.ready && (
             <div className="mt-6 rounded-xl border border-border bg-muted p-4 text-sm leading-relaxed">
-              <strong>Live image generation is unavailable.</strong> Add <code className="rounded bg-card px-1 font-mono text-xs">OPENAI_API_KEY</code> in project Vars and reload. No fake illustrations are shown.
+              <strong>Live image generation is unavailable.</strong> Vercel AI Gateway provides live generation in Vercel previews and deployments. This job can be retried when Gateway is available. No fake illustrations are shown.
             </div>
           )}
 

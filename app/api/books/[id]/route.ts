@@ -22,7 +22,7 @@ export async function GET(_request: Request, { params }: Context) {
 
   const { data: book, error: bookError } = await supabase
     .from('story_books')
-    .select('id, owner_id, child_first_name, status, stage, progress, attempts, character_approved_at, character_path, updated_at')
+    .select('id, owner_id, child_first_name, status, stage, progress, attempts, character_approved_at, character_path, photo_path, updated_at')
     .eq('id', id)
     .eq('owner_id', user.id)
     .maybeSingle()
@@ -51,6 +51,7 @@ export async function GET(_request: Request, { params }: Context) {
       progress: book.progress,
       attempts: book.attempts,
       characterApproved: Boolean(book.character_approved_at),
+      originalPhotoDeleted: !book.photo_path,
       characterPath: book.character_path,
       characterUrl: await signedUrl(supabase, book.character_path),
       updatedAt: book.updated_at,
@@ -74,8 +75,16 @@ export async function DELETE(_request: Request, { params }: Context) {
   if (!book) return NextResponse.json({ error: 'This book is not available in this guardian account.' }, { status: 404 })
 
   const { data: pages } = await supabase.from('story_book_pages').select('illustration_path').eq('book_id', id)
-  const paths = [book.photo_path, book.character_path, ...(pages ?? []).map((page) => page.illustration_path)].filter((path): path is string => Boolean(path))
   const admin = createAdminClient()
+  const characterFolder = `${user.id}/${id}/character`
+  const { data: characterFiles, error: listError } = await admin.storage.from(BUCKET).list(characterFolder, { limit: 100 })
+  if (listError) return NextResponse.json({ error: 'The book could not be fully deleted. Please try again.' }, { status: 500 })
+  const paths = Array.from(new Set([
+    book.photo_path,
+    book.character_path,
+    ...(pages ?? []).map((page) => page.illustration_path),
+    ...(characterFiles ?? []).filter((file) => file.id).map((file) => `${characterFolder}/${file.name}`),
+  ].filter((path): path is string => Boolean(path))))
   if (paths.length) {
     const { error: storageError } = await admin.storage.from(BUCKET).remove(paths)
     if (storageError) return NextResponse.json({ error: 'The book could not be fully deleted. Please try again.' }, { status: 500 })

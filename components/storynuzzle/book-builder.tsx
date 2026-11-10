@@ -24,7 +24,10 @@ const fetcher = async (url: string) => {
 
 export function BookBuilder({ existingBooks }: { existingBooks: ShelfBook[] }) {
   const router = useRouter()
-  const { data: config } = useSWR('/api/config', fetcher, { revalidateOnFocus: false })
+  const { data: config } = useSWR('/api/config', fetcher, {
+    revalidateOnFocus: false,
+    fallbackData: { ready: true, mode: 'live', model: 'OpenAI GPT Image 2.6 Sunburst via Vercel AI Gateway' },
+  })
   const [firstName, setFirstName] = useState('')
   const [pronouns, setPronouns] = useState<'he' | 'she'>('she')
   const [photo, setPhoto] = useState<File | null>(null)
@@ -55,8 +58,11 @@ export function BookBuilder({ existingBooks }: { existingBooks: ShelfBook[] }) {
       const response = await fetch('/api/books', { method: 'POST', body: formData })
       const payload = await response.json()
       if (!response.ok) throw new Error(payload.error || 'We could not save this book. Please try again.')
-      await fetch(`/api/books/${payload.id}/generate`, { method: 'POST' })
-      router.push(`/books/${payload.id}`)
+      try {
+        await fetch(`/api/books/${payload.id}/generate`, { method: 'POST' })
+      } finally {
+        router.push(`/books/${payload.id}`)
+      }
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'We could not save this book. Please try again.')
     } finally {
@@ -77,13 +83,14 @@ export function BookBuilder({ existingBooks }: { existingBooks: ShelfBook[] }) {
           <p className="mb-6 rounded-xl bg-muted px-4 py-3 text-sm leading-relaxed text-foreground/75">Live generation is ready with {config.model}. You&apos;ll review the character before the story illustrations are made.</p>
         ) : (
           <div id="setup" className="mb-6 rounded-2xl border border-border bg-muted p-5">
-            <h3 className="font-bold">Live image generation needs one setup step</h3>
-            <p className="mt-2 text-sm leading-relaxed text-foreground/75">StoryNuzzle does not show simulated art. Add your OpenAI API key to enable the real character and story generation.</p>
+            <h3 className="font-bold">Live image generation is unavailable</h3>
+            <p className="mt-2 text-sm leading-relaxed text-foreground/75">Live creation uses OpenAI GPT Image 2.6 through Vercel AI Gateway. Vercel previews and deployments authenticate Gateway automatically, so no provider key is added to browser code or project Vars.</p>
             <ol className="mt-4 list-decimal space-y-2 pl-5 text-sm leading-relaxed text-foreground/75">
-              <li>In project settings, open <strong>Vars</strong> and add <code className="rounded bg-card px-1.5 py-0.5 font-mono text-xs text-foreground">OPENAI_API_KEY</code> for Preview and Production.</li>
-              <li>Use an OpenAI API key from an organization with GPT Image access and any required image-model verification completed.</li>
-              <li>Reload this page. The live generation button will become available after the server sees the key.</li>
+              <li>Open the app in its Vercel preview or deployment, where Gateway authentication is provided automatically.</li>
+              <li>If the live service remains unavailable, check the generation error on the book and retry after Gateway recovers.</li>
+              <li>Use the sample below only to preview the fixed story and page-turn controls. It never substitutes for live image generation.</li>
             </ol>
+            <Link href="/demo" className="mt-4 inline-flex rounded-full border border-border bg-card px-4 py-2 text-sm font-semibold text-primary underline underline-offset-4 hover:bg-background focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">Open the separate read-only sample</Link>
           </div>
         )}
 
@@ -114,7 +121,7 @@ export function BookBuilder({ existingBooks }: { existingBooks: ShelfBook[] }) {
 
           <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-border p-4">
             <input type="checkbox" checked={guardianConsent} onChange={(event) => setGuardianConsent(event.target.checked)} className="mt-1 size-4 accent-primary" />
-            <span className="text-sm leading-relaxed">I am this child&apos;s parent or legal guardian and have permission to use this photo. I understand the photo is sent to OpenAI&apos;s image API to create the portrait, and its handling follows the OpenAI API data controls on the configured account.</span>
+            <span className="text-sm leading-relaxed">I am this child&apos;s parent or legal guardian and have permission to use this photo. I understand the photo is sent through Vercel AI Gateway to OpenAI&apos;s image model to create the portrait, and its handling follows the Vercel and OpenAI service terms.</span>
           </label>
 
           {message && <p role="alert" className="rounded-xl border border-border bg-muted px-4 py-3 text-sm leading-relaxed">{message}</p>}
