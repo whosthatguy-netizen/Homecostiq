@@ -1,6 +1,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { BookBuilder, type ShelfBook } from '@/components/storynuzzle/book-builder'
+import { GuestAccess } from '@/components/storynuzzle/guest-access'
 import { createClient } from '@/lib/supabase/server'
 
 export default async function HomePage() {
@@ -35,7 +36,9 @@ export default async function HomePage() {
           </span>
           <span className="font-serif text-2xl font-semibold tracking-tight">StoryNuzzle</span>
         </Link>
-        {user ? (
+        {user?.is_anonymous ? (
+          <span className="text-sm font-semibold text-foreground/70">Guest session · saved in this browser</span>
+        ) : user ? (
           <form action="/auth/sign-out" method="post">
             <button className="rounded-full border border-border px-4 py-2 text-sm font-semibold transition hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
               Sign out
@@ -84,15 +87,15 @@ export default async function HomePage() {
 
       <section id="make-a-book" className="mx-auto w-full max-w-7xl scroll-mt-8 px-5 pb-16 sm:px-8">
         {user ? (
-          <BookBuilder existingBooks={books} />
+          <BookBuilder existingBooks={books} isGuest={Boolean(user.is_anonymous)} />
         ) : (
           <div className="grid gap-8 rounded-[2rem] border border-border bg-card p-6 shadow-sm sm:p-10 md:grid-cols-[1fr_auto] md:items-center">
             <div>
               <p className="text-sm font-bold uppercase tracking-[0.18em] text-primary">For grown-ups</p>
               <h2 className="mt-3 font-serif text-3xl sm:text-4xl">Your family&apos;s little book nook</h2>
-              <p className="mt-3 max-w-2xl leading-relaxed text-foreground/75">Create a guardian account to keep each book private, review the character portrait, and return to your stories whenever you like.</p>
+              <p className="mt-3 max-w-2xl leading-relaxed text-foreground/75">Start privately without an account. Your books stay tied to this browser, so you can come back without signing in.</p>
             </div>
-            <Link href="/sign-in" className="inline-flex min-h-12 items-center justify-center rounded-full bg-primary px-6 py-3 font-bold text-primary-foreground transition hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">Sign in or create an account</Link>
+            <GuestAccess />
           </div>
         )}
       </section>

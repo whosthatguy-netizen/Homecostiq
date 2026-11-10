@@ -22,7 +22,7 @@ const fetcher = async (url: string) => {
   return response.json() as Promise<StudioConfig>
 }
 
-export function BookBuilder({ existingBooks }: { existingBooks: ShelfBook[] }) {
+export function BookBuilder({ existingBooks, isGuest = false }: { existingBooks: ShelfBook[]; isGuest?: boolean }) {
   const router = useRouter()
   const { data: config } = useSWR('/api/config', fetcher, {
     revalidateOnFocus: false,
@@ -139,7 +139,7 @@ export function BookBuilder({ existingBooks }: { existingBooks: ShelfBook[] }) {
             <Step title="You decide" detail="Approve the character or retry it before continuing." />
             <Step title="Read the adventure" detail="Four illustrated scenes become a page-turn preview and PDF." />
           </ol>
-          <p className="mt-6 border-t border-border pt-5 text-sm leading-relaxed text-foreground/75">Your photos and books are private to your guardian account. The original upload is removed after approval; delete the complete book at any time.</p>
+          <p className="mt-6 border-t border-border pt-5 text-sm leading-relaxed text-foreground/75">{isGuest ? 'Your photos and books are private to this guest session. Keep this browser’s site data to return to them; clearing it may remove your access.' : 'Your photos and books are private to your guardian account.'} The original upload is removed after approval; delete the complete book at any time.</p>
         </section>
 
         <section className="rounded-[2rem] border border-border bg-card p-6 sm:p-7">
