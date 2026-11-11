@@ -18,6 +18,26 @@ export function formatPriceRange(product: ShopifyProduct) {
   return `${formatter.format(minimum)}–${formatter.format(maximum)}`
 }
 
+export function getDisplayProductTitle(title: string) {
+  const normalizedTitle = title.replace(/\s+/g, ' ').trim()
+  const lowerTitle = normalizedTitle.toLowerCase()
+
+  if (lowerTitle.includes('christmas') && /projection|projector/.test(lowerTitle)) return 'Holiday Projection Light'
+  if (/drawing\s+pad|sketchpad/.test(lowerTitle)) return '3D Drawing Pad'
+  if (/thermal\s+label\s+printer|mini\s+label\s+printer/.test(lowerTitle)) return 'Mini Thermal Label Printer'
+
+  const primaryTitle = normalizedTitle.split(/\s+[-–—|]\s+/)[0]?.trim() || normalizedTitle
+  if (primaryTitle.length <= 56) return primaryTitle
+
+  return `${primaryTitle.split(/\s+/).slice(0, 7).join(' ')}…`
+}
+
+export function getProductImageAlt(altText: string | null, title: string) {
+  const normalizedAlt = altText?.trim()
+  const looksLikeOpaqueId = normalizedAlt && /^[a-z0-9_-]{20,}$/i.test(normalizedAlt)
+  return normalizedAlt && !looksLikeOpaqueId ? normalizedAlt : `${getDisplayProductTitle(title)} product image`
+}
+
 export function getShopifyVideo(product: ShopifyProduct): ShopifyVideo | null {
   const media = product.media.nodes.find((item) => item.__typename === 'Video')
   if (!media || media.__typename !== 'Video' || !media.sources) return null

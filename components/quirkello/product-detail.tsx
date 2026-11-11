@@ -5,8 +5,7 @@ import Link from 'next/link'
 import { useMemo, useState } from 'react'
 import { ArrowLeft, Check, ShieldCheck } from 'lucide-react'
 import type { ShopifyProduct } from '@/lib/shopify/storefront'
-import { formatMoney } from '@/lib/shopify/presentation'
-import { getShopifyVideo } from '@/lib/shopify/presentation'
+import { formatMoney, getDisplayProductTitle, getProductImageAlt, getShopifyVideo } from '@/lib/shopify/presentation'
 import { isDemoProduct } from '@/lib/shopify/storefront'
 import { ProductCard } from '@/components/quirkello/product-card'
 import { AddToCartButton } from '@/components/quirkello/add-to-cart-button'
@@ -23,6 +22,7 @@ export function ProductDetail({ product, recommendations }: { product: ShopifyPr
   const demo = isDemoProduct(product)
   const video = getShopifyVideo(product)
   const videoSource = video?.sources.find((source) => source.mimeType.startsWith('video/'))
+  const displayTitle = getDisplayProductTitle(product.title)
 
   return (
     <div className="mx-auto max-w-7xl px-5 py-8 sm:px-8 sm:py-12">
@@ -30,16 +30,15 @@ export function ProductDetail({ product, recommendations }: { product: ShopifyPr
       <div className="mt-6 grid gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:gap-14">
         <div>
           <div className="relative aspect-square overflow-hidden rounded-[2rem] bg-muted">
-            {galleryImage ? <Image src={galleryImage.url} alt={galleryImage.altText || product.title} fill priority sizes="(max-width: 1024px) 100vw, 55vw" className="object-cover" /> : <div className="flex h-full items-center justify-center text-sm text-muted-foreground">No product image is available in Shopify.</div>}
+            {galleryImage ? <Image src={galleryImage.url} alt={getProductImageAlt(galleryImage.altText, product.title)} fill priority sizes="(max-width: 1024px) 100vw, 55vw" className="object-cover" /> : <div className="flex h-full items-center justify-center text-sm text-muted-foreground">No product image is available in Shopify.</div>}
             {demo && <span className="absolute left-4 top-4 rounded-full bg-accent px-4 py-2 text-xs font-bold uppercase tracking-wide">Demo listing — not for sale</span>}
           </div>
-          {images.length > 1 && <div className="mt-3 flex gap-3 overflow-x-auto">{images.map((image, index) => <button key={image.url} type="button" onClick={() => setSelectedImage(index)} className={`relative size-20 shrink-0 overflow-hidden rounded-xl border-2 ${selectedImage === index ? 'border-secondary' : 'border-border'}`} aria-label={`Show image ${index + 1} of ${product.title}`}><Image src={image.url} alt={image.altText || `${product.title}, image ${index + 1}`} fill sizes="80px" className="object-cover" /></button>)}</div>}
-          {videoSource && <div className="mt-5 overflow-hidden rounded-[1.5rem] bg-muted"><video controls preload="metadata" poster={video?.previewImage?.url} className="aspect-video w-full object-cover" aria-label={video?.alt || `Product demonstration for ${product.title}`}><source src={videoSource.url} type={videoSource.mimeType} />Your browser does not support the video element.</video></div>}
+          {images.length > 1 && <div className="mt-3 flex gap-3 overflow-x-auto">{images.map((image, index) => <button key={image.url} type="button" onClick={() => setSelectedImage(index)} className={`relative size-20 shrink-0 overflow-hidden rounded-xl border-2 ${selectedImage === index ? 'border-secondary' : 'border-border'}`} aria-label={`Show image ${index + 1} of ${displayTitle}`}><Image src={image.url} alt={getProductImageAlt(image.altText, product.title)} fill sizes="80px" className="object-cover" /></button>)}</div>}
+          {videoSource && <div className="mt-5 overflow-hidden rounded-[1.5rem] bg-muted"><video controls preload="metadata" poster={video?.previewImage?.url} className="aspect-video w-full object-cover" aria-label={video?.alt || `Product demonstration for ${displayTitle}`}><source src={videoSource.url} type={videoSource.mimeType} />Your browser does not support the video element.</video></div>}
         </div>
 
         <div className="lg:sticky lg:top-36 lg:self-start">
-          {product.productType && <p className="text-xs font-bold uppercase tracking-[0.16em] text-secondary">{product.productType}</p>}
-          <h1 className="mt-3 font-serif text-4xl leading-tight sm:text-5xl">{product.title}</h1>
+          <h1 className="mt-3 font-serif text-4xl leading-tight sm:text-5xl">{displayTitle}</h1>
           <div className="mt-4 flex flex-wrap items-center gap-3">
             <p className="text-xl font-semibold">{demo ? 'Price pending verification' : selectedVariant ? formatMoney(selectedVariant.price) : formatMoney(product.priceRange.minVariantPrice)}</p>
             <span className={`rounded-full px-3 py-1.5 text-xs font-semibold ${demo ? 'bg-accent text-accent-foreground' : selectedVariant?.availableForSale ? 'bg-muted text-foreground' : 'bg-muted text-muted-foreground'}`}>

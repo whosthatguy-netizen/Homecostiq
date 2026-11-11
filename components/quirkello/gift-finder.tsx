@@ -5,8 +5,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { ArrowRight, Gift } from 'lucide-react'
 import type { ShopifyProduct } from '@/lib/shopify/storefront'
-import { getProductKeywords } from '@/lib/shopify/presentation'
-import { formatPriceRange } from '@/lib/shopify/presentation'
+import { formatPriceRange, getDisplayProductTitle, getProductImageAlt, getProductKeywords } from '@/lib/shopify/presentation'
 import { isDemoProduct } from '@/lib/shopify/storefront'
 
 const interests = [
@@ -22,6 +21,7 @@ export function GiftFinder({ products }: { products: ShopifyProduct[] }) {
   const [budget, setBudget] = useState('any')
   const [interest, setInterest] = useState('anything')
   const [occasion, setOccasion] = useState('any')
+  const [hasSearched, setHasSearched] = useState(false)
 
   const results = useMemo(() => {
     const interestWords = interest.split(' ').filter(Boolean)
@@ -69,8 +69,13 @@ export function GiftFinder({ products }: { products: ShopifyProduct[] }) {
             </label>
           </div>
           <div aria-live="polite" className="mt-5 border-t border-border pt-4">
-            {results.length ? (
-              <div className="grid gap-3 sm:grid-cols-3">
+            {!hasSearched ? (
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-sm leading-relaxed text-muted-foreground">Choose your filters, then see up to three live matches.</p>
+                <button type="button" onClick={() => setHasSearched(true)} className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground transition hover:bg-secondary">Find my picks <ArrowRight className="size-4" aria-hidden="true" /></button>
+              </div>
+            ) : results.length ? (
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                 {results.map((product) => <GiftResult key={product.id} product={product} />)}
               </div>
             ) : (
@@ -85,10 +90,11 @@ export function GiftFinder({ products }: { products: ShopifyProduct[] }) {
 
 function GiftResult({ product }: { product: ShopifyProduct }) {
   const image = product.featuredImage ?? product.images.nodes[0]
+  const displayTitle = getDisplayProductTitle(product.title)
   return (
     <Link href={`/products/${product.handle}`} className="group flex items-center gap-3 rounded-2xl border border-border p-3 transition hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring">
-      <div className="relative size-14 shrink-0 overflow-hidden rounded-xl bg-muted">{image && <Image src={image.url} alt={image.altText || product.title} fill sizes="56px" className="object-cover" />}</div>
-      <span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold">{product.title}</span><span className="text-xs text-muted-foreground">{formatPriceRange(product)}</span></span>
+      <div className="relative size-14 shrink-0 overflow-hidden rounded-xl bg-muted">{image && <Image src={image.url} alt={getProductImageAlt(image.altText, product.title)} fill sizes="56px" className="object-cover" />}</div>
+      <span className="min-w-0 flex-1"><span className="line-clamp-2 text-sm font-semibold">{displayTitle}</span><span className="text-xs text-muted-foreground">{formatPriceRange(product)}</span></span>
       <ArrowRight className="size-4 shrink-0" aria-hidden="true" />
     </Link>
   )

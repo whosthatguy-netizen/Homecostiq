@@ -3,7 +3,7 @@
 import Image from 'next/image'
 import { useEffect, useRef, useState } from 'react'
 import { ArrowRight, Minus, Plus, ShoppingBag, X } from 'lucide-react'
-import { formatMoney } from '@/lib/shopify/presentation'
+import { formatMoney, getDisplayProductTitle, getProductImageAlt } from '@/lib/shopify/presentation'
 import { useCart } from '@/components/quirkello/cart-provider'
 
 export function CartDialog() {
@@ -79,23 +79,24 @@ export function CartDialog() {
             <ul className="flex flex-col divide-y divide-border">
               {cart.lines.nodes.map((line) => {
                 const image = line.merchandise.product.featuredImage
+                const displayTitle = getDisplayProductTitle(line.merchandise.product.title)
                 return (
                   <li key={line.id} className="flex gap-4 py-5">
                     <div className="relative size-24 shrink-0 overflow-hidden rounded-2xl bg-muted">
-                      {image && <Image src={image.url} alt={image.altText || line.merchandise.product.title} fill sizes="96px" className="object-cover" />}
+                      {image && <Image src={image.url} alt={getProductImageAlt(image.altText, line.merchandise.product.title)} fill sizes="96px" className="object-cover" />}
                     </div>
                     <div className="flex min-w-0 flex-1 flex-col justify-between gap-3">
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
-                          <a href={`/products/${line.merchandise.product.handle}`} onClick={() => setOpen(false)} className="font-semibold underline-offset-4 hover:underline">{line.merchandise.product.title}</a>
+                          <a href={`/products/${line.merchandise.product.handle}`} onClick={() => setOpen(false)} className="font-semibold underline-offset-4 hover:underline">{displayTitle}</a>
                           {line.merchandise.selectedOptions.length > 0 && <p className="mt-1 text-sm text-muted-foreground">{line.merchandise.selectedOptions.map((option) => `${option.name}: ${option.value}`).join(' · ')}</p>}
                         </div>
                         <p className="shrink-0 text-sm font-semibold">{formatMoney(line.cost.totalAmount)}</p>
                       </div>
                       <div className="flex items-center gap-2">
-                        <button type="button" disabled={busyLine === line.id} onClick={() => updateLine(line.id, line.quantity - 1)} className="flex size-9 items-center justify-center rounded-full border border-border hover:bg-muted disabled:opacity-50" aria-label={`Remove one ${line.merchandise.product.title}`}><Minus className="size-4" aria-hidden="true" /></button>
+                        <button type="button" disabled={busyLine === line.id} onClick={() => updateLine(line.id, line.quantity - 1)} className="flex size-9 items-center justify-center rounded-full border border-border hover:bg-muted disabled:opacity-50" aria-label={`Remove one ${displayTitle}`}><Minus className="size-4" aria-hidden="true" /></button>
                         <span aria-label={`Quantity ${line.quantity}`} className="min-w-6 text-center text-sm tabular-nums">{line.quantity}</span>
-                        <button type="button" disabled={busyLine === line.id || line.quantity >= 20} onClick={() => updateLine(line.id, line.quantity + 1)} className="flex size-9 items-center justify-center rounded-full border border-border hover:bg-muted disabled:opacity-50" aria-label={`Add one ${line.merchandise.product.title}`}><Plus className="size-4" aria-hidden="true" /></button>
+                        <button type="button" disabled={busyLine === line.id || line.quantity >= 20} onClick={() => updateLine(line.id, line.quantity + 1)} className="flex size-9 items-center justify-center rounded-full border border-border hover:bg-muted disabled:opacity-50" aria-label={`Add one ${displayTitle}`}><Plus className="size-4" aria-hidden="true" /></button>
                         <button type="button" disabled={busyLine === line.id} onClick={() => updateLine(line.id, 0)} className="ml-2 text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground disabled:opacity-50">Remove</button>
                       </div>
                     </div>

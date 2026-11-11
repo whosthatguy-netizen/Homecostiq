@@ -2,7 +2,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { ArrowDown, ArrowRight, ArrowUpRight, CirclePlay, Sparkles } from 'lucide-react'
 import { isCollectiveEligibleProduct, type CatalogResult, type ShopifyProduct } from '@/lib/shopify/storefront'
-import { getShopifyVideo } from '@/lib/shopify/presentation'
+import { getDisplayProductTitle, getShopifyVideo } from '@/lib/shopify/presentation'
 import { ProductCard } from '@/components/quirkello/product-card'
 import { GiftFinder } from '@/components/quirkello/gift-finder'
 
@@ -78,15 +78,19 @@ export function StorefrontHome({ catalog }: { catalog: CatalogResult }) {
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.16em] text-secondary">Easy on the budget</p>
             <h2 className="mt-3 font-serif text-4xl leading-tight sm:text-5xl">Little surprises.<br />Lovely limits.</h2>
-            <p className="mt-4 max-w-sm leading-relaxed text-muted-foreground">Browse real catalog prices in Shopify. Shipping and taxes are confirmed at checkout.</p>
-            <div className="mt-6 flex flex-wrap gap-3">
-              <Link href="/search?q=under%2025" className="inline-flex min-h-11 items-center gap-2 rounded-full border border-border px-5 text-sm font-semibold transition hover:bg-muted">Under $25 <ArrowRight className="size-4" aria-hidden="true" /></Link>
-              <Link href="/search?q=under%2050" className="inline-flex min-h-11 items-center gap-2 rounded-full border border-border px-5 text-sm font-semibold transition hover:bg-muted">Under $50 <ArrowRight className="size-4" aria-hidden="true" /></Link>
-            </div>
+            <p className="mt-4 max-w-sm leading-relaxed text-muted-foreground">Choose a price range to browse the live Shopify catalog. Shipping and taxes are confirmed at checkout.</p>
           </div>
-          <div className="grid grid-cols-2 gap-4 sm:gap-6">
-            {catalog.status === 'ready' && under25.length > 0 ? under25.slice(0, 2).map((product) => <ProductCard key={`under25-${product.id}`} product={product} />) : <BudgetEmpty amount="$25" />}
-            {catalog.status === 'ready' && under50.length > 0 ? under50.slice(0, 2).map((product) => <ProductCard key={`under50-${product.id}`} product={product} />) : <BudgetEmpty amount="$50" />}
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Link href="/search?q=under%2025" className="rounded-[1.5rem] border border-border bg-background p-6 transition hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring">
+              <p className="text-xs font-bold uppercase tracking-[0.14em] text-secondary">Price guide</p>
+              <h3 className="mt-5 font-serif text-3xl">Under $25</h3>
+              <p className="mt-2 text-sm text-muted-foreground">{under25.length} {under25.length === 1 ? 'live find' : 'live finds'}</p>
+            </Link>
+            <Link href="/search?q=under%2050" className="rounded-[1.5rem] border border-border bg-background p-6 transition hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring">
+              <p className="text-xs font-bold uppercase tracking-[0.14em] text-secondary">Price guide</p>
+              <h3 className="mt-5 font-serif text-3xl">Under $50</h3>
+              <p className="mt-2 text-sm text-muted-foreground">{under50.length} {under50.length === 1 ? 'live find' : 'live finds'}</p>
+            </Link>
           </div>
         </div>
       </section>
@@ -169,18 +173,15 @@ function CatalogNotice({ status, excludedProductCount }: { status: CatalogResult
   )
 }
 
-function BudgetEmpty({ amount }: { amount: string }) {
-  return <div className="flex min-h-64 flex-col justify-end rounded-[1.5rem] border border-dashed border-border bg-muted/40 p-5"><p className="text-xs font-bold uppercase tracking-[0.14em] text-secondary">Under {amount}</p><h3 className="mt-2 font-serif text-2xl">Waiting for real finds.</h3><p className="mt-2 text-sm leading-relaxed text-muted-foreground">This space updates from Shopify prices when the catalog is ready.</p></div>
-}
-
 function VideoCard({ product, video, source }: { product: ShopifyProduct; video: { alt: string | null; previewImage: { url: string; altText: string | null } | null }; source: string }) {
+  const displayTitle = getDisplayProductTitle(product.title)
   return (
     <article className="snap-start overflow-hidden rounded-[1.5rem] bg-background text-foreground">
-      <video className="aspect-[4/5] w-full bg-muted object-cover" controls preload="metadata" poster={video.previewImage?.url} aria-label={video.alt || `Product video for ${product.title}`}>
+      <video className="aspect-[4/5] w-full bg-muted object-cover" controls preload="metadata" poster={video.previewImage?.url} aria-label={video.alt || `Product video for ${displayTitle}`}>
         <source src={source} type="video/mp4" />
         Your browser does not support the video element.
       </video>
-      <div className="flex items-center justify-between gap-3 p-4"><div><p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Shop the clip</p><h3 className="mt-1 font-semibold">{product.title}</h3></div><Link href={`/products/${product.handle}`} className="flex size-10 shrink-0 items-center justify-center rounded-full bg-accent text-primary" aria-label={`View ${product.title}`}><ArrowUpRight className="size-5" aria-hidden="true" /></Link></div>
+      <div className="flex items-center justify-between gap-3 p-4"><div><p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Shop the clip</p><h3 className="mt-1 font-semibold">{displayTitle}</h3></div><Link href={`/products/${product.handle}`} className="flex size-10 shrink-0 items-center justify-center rounded-full bg-accent text-primary" aria-label={`View ${displayTitle}`}><ArrowUpRight className="size-5" aria-hidden="true" /></Link></div>
     </article>
   )
 }
