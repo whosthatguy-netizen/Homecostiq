@@ -28,7 +28,6 @@ export const metadata: Metadata = {
     siteName: 'Quirkello',
     title: 'Quirkello — Unexpectedly awesome.',
     description: 'Unusual toys, satisfying gadgets, clever desk finds, and gifts for curious people.',
-    ...(siteOrigin ? { images: [new URL('/quirkello-hero.png', siteOrigin).toString()] } : {}),
   },
 }
 

@@ -1,8 +1,7 @@
-import Image from 'next/image'
 import Link from 'next/link'
 import { ArrowDown, ArrowRight, ArrowUpRight, CirclePlay, Sparkles } from 'lucide-react'
 import { isCollectiveEligibleProduct, type CatalogResult, type ShopifyProduct } from '@/lib/shopify/storefront'
-import { getDisplayProductTitle, getShopifyVideo } from '@/lib/shopify/presentation'
+import { getDisplayProductTitle, getShopifyVideo, hasEnglishLettering } from '@/lib/shopify/presentation'
 import { ProductCard } from '@/components/quirkello/product-card'
 import { GiftFinder } from '@/components/quirkello/gift-finder'
 
@@ -40,11 +39,14 @@ export function StorefrontHome({ catalog }: { catalog: CatalogResult }) {
             <span>Curious by nature</span><span aria-hidden="true">·</span><span>Small joys, thoughtfully found</span>
           </div>
         </div>
-        <div className="relative min-h-[23rem] overflow-hidden rounded-[2rem] bg-muted sm:min-h-[32rem] md:min-h-[37rem]">
-          <Image src="/quirkello-hero.png" alt="Illustrative still life of unusual toys and clever desk gadgets in Quirkello&rsquo; navy, blue, yellow, and cream palette" fill priority sizes="(max-width: 768px) 100vw, 55vw" className="object-cover" />
-          <div className="absolute inset-x-4 bottom-4 flex items-end justify-between gap-4 sm:inset-x-6 sm:bottom-6">
-            <p className="max-w-xs rounded-2xl bg-background/90 px-4 py-3 text-sm font-semibold text-foreground backdrop-blur">A playful mood board. Live products come directly from Shopify.</p>
-            <span className="hidden size-14 items-center justify-center rounded-full bg-accent text-primary sm:flex"><ArrowUpRight className="size-6" aria-hidden="true" /></span>
+        <div className="flex min-h-[23rem] flex-col justify-between gap-8 overflow-hidden rounded-[2rem] bg-secondary p-6 text-secondary-foreground sm:min-h-[32rem] sm:p-8 md:min-h-[37rem]">
+          <div className="flex items-center justify-between gap-4">
+            <p className="text-xs font-bold uppercase tracking-[0.16em] text-accent">A curious little shop</p>
+            <ArrowUpRight className="size-5 text-secondary-foreground/70" aria-hidden="true" />
+          </div>
+          <div className="max-w-lg">
+            <p className="font-serif text-4xl leading-tight sm:text-5xl">Small joys, thoughtfully found.</p>
+            <p className="mt-4 max-w-md text-sm leading-relaxed text-secondary-foreground/75">A playful shop for curious people, full of unexpected finds.</p>
           </div>
         </div>
       </section>
@@ -175,9 +177,10 @@ function CatalogNotice({ status, excludedProductCount }: { status: CatalogResult
 
 function VideoCard({ product, video, source }: { product: ShopifyProduct; video: { alt: string | null; previewImage: { url: string; altText: string | null } | null }; source: string }) {
   const displayTitle = getDisplayProductTitle(product.title)
+  const previewImage = hasEnglishLettering(video.previewImage) ? video.previewImage : null
   return (
     <article className="snap-start overflow-hidden rounded-[1.5rem] bg-background text-foreground">
-      <video className="aspect-[4/5] w-full bg-muted object-cover" controls preload="metadata" poster={video.previewImage?.url} aria-label={video.alt || `Product video for ${displayTitle}`}>
+      <video className="aspect-[4/5] w-full bg-muted object-cover" controls preload="metadata" poster={previewImage?.url} aria-label={video.alt || `Product video for ${displayTitle}`}>
         <source src={source} type="video/mp4" />
         Your browser does not support the video element.
       </video>

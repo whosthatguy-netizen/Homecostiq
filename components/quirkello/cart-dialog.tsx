@@ -3,7 +3,7 @@
 import Image from 'next/image'
 import { useEffect, useRef, useState } from 'react'
 import { ArrowRight, Minus, Plus, ShoppingBag, X } from 'lucide-react'
-import { formatMoney, getDisplayProductTitle, getProductImageAlt } from '@/lib/shopify/presentation'
+import { formatMoney, getDisplayProductTitle, getProductImageAlt, hasEnglishLettering } from '@/lib/shopify/presentation'
 import { useCart } from '@/components/quirkello/cart-provider'
 
 export function CartDialog() {
@@ -78,7 +78,7 @@ export function CartDialog() {
           ) : cart?.lines.nodes.length ? (
             <ul className="flex flex-col divide-y divide-border">
               {cart.lines.nodes.map((line) => {
-                const image = line.merchandise.product.featuredImage
+                const image = hasEnglishLettering(line.merchandise.product.featuredImage) ? line.merchandise.product.featuredImage : null
                 const displayTitle = getDisplayProductTitle(line.merchandise.product.title)
                 return (
                   <li key={line.id} className="flex gap-4 py-5">

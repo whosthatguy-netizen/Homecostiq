@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useMemo, useState } from 'react'
 import { ArrowLeft, Check, ShieldCheck } from 'lucide-react'
 import type { ShopifyProduct } from '@/lib/shopify/storefront'
-import { formatMoney, getDisplayProductTitle, getProductImageAlt, getShopifyVideo } from '@/lib/shopify/presentation'
+import { formatMoney, getDisplayProductTitle, getProductImageAlt, getShopifyVideo, hasEnglishLettering } from '@/lib/shopify/presentation'
 import { isDemoProduct } from '@/lib/shopify/storefront'
 import { ProductCard } from '@/components/quirkello/product-card'
 import { AddToCartButton } from '@/components/quirkello/add-to-cart-button'
@@ -17,12 +17,14 @@ export function ProductDetail({ product, recommendations }: { product: ShopifyPr
   const [selectedImage, setSelectedImage] = useState<number | null>(null)
   const optionNames = useMemo(() => Array.from(new Set(product.variants.nodes.flatMap((variant) => variant.selectedOptions.map((option) => option.name)))), [product.variants.nodes])
   const selectedVariant = product.variants.nodes.find((variant) => optionNames.every((name) => variant.selectedOptions.find((option) => option.name === name)?.value === selectedValues[name])) ?? null
-  const images = product.images.nodes.length ? product.images.nodes : product.featuredImage ? [product.featuredImage] : []
-  const variantImage = selectedVariant?.image
+  const images = product.images.nodes.filter(hasEnglishLettering)
+  if (images.length === 0 && hasEnglishLettering(product.featuredImage)) images.push(product.featuredImage)
+  const variantImage = selectedVariant?.image && hasEnglishLettering(selectedVariant.image) ? selectedVariant.image : null
   const galleryImage = (selectedImage === null ? variantImage : images[selectedImage]) ?? images[0] ?? null
   const demo = isDemoProduct(product)
   const video = getShopifyVideo(product)
   const videoSource = video?.sources.find((source) => source.mimeType.startsWith('video/'))
+  const videoPreviewImage = video && hasEnglishLettering(video.previewImage) ? video.previewImage : null
   const displayTitle = getDisplayProductTitle(product.title)
 
   return (
@@ -31,11 +33,11 @@ export function ProductDetail({ product, recommendations }: { product: ShopifyPr
       <div className="mt-6 grid gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:gap-14">
         <div>
           <div className="relative aspect-square overflow-hidden rounded-[2rem] bg-muted">
-            {galleryImage ? <Image src={galleryImage.url} alt={getProductImageAlt(galleryImage.altText, product.title)} fill priority sizes="(max-width: 1024px) 100vw, 55vw" className="object-cover" /> : <div className="flex h-full items-center justify-center text-sm text-muted-foreground">No product image is available in Shopify.</div>}
+            {galleryImage ? <Image src={galleryImage.url} alt={getProductImageAlt(galleryImage.altText, product.title)} fill priority sizes="(max-width: 1024px) 100vw, 55vw" className="object-cover" /> : <div className="flex h-full items-center justify-center text-sm text-muted-foreground">No product image with English lettering is available.</div>}
             {demo && <span className="absolute left-4 top-4 rounded-full bg-accent px-4 py-2 text-xs font-bold uppercase tracking-wide">Demo listing — not for sale</span>}
           </div>
           {images.length > 1 && <div className="mt-3 flex gap-3 overflow-x-auto">{images.map((image, index) => <button key={image.url} type="button" onClick={() => setSelectedImage(index)} className={`relative size-20 shrink-0 overflow-hidden rounded-xl border-2 ${galleryImage?.url === image.url ? 'border-secondary' : 'border-border'}`} aria-label={`Show image ${index + 1} of ${displayTitle}`}><Image src={image.url} alt={getProductImageAlt(image.altText, product.title)} fill sizes="80px" className="object-cover" /></button>)}</div>}
-          {videoSource && <div className="mt-5 overflow-hidden rounded-[1.5rem] bg-muted"><video controls preload="metadata" poster={video?.previewImage?.url} className="aspect-video w-full object-cover" aria-label={video?.alt || `Product demonstration for ${displayTitle}`}><source src={videoSource.url} type={videoSource.mimeType} />Your browser does not support the video element.</video></div>}
+          {videoSource && <div className="mt-5 overflow-hidden rounded-[1.5rem] bg-muted"><video controls preload="metadata" poster={videoPreviewImage?.url} className="aspect-video w-full object-cover" aria-label={video?.alt || `Product demonstration for ${displayTitle}`}><source src={videoSource.url} type={videoSource.mimeType} />Your browser does not support the video element.</video></div>}
         </div>
 
         <div className="lg:sticky lg:top-36 lg:self-start">

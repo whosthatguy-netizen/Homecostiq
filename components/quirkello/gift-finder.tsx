@@ -5,7 +5,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { ArrowRight, Gift } from 'lucide-react'
 import type { ShopifyProduct } from '@/lib/shopify/storefront'
-import { formatPriceRange, getDisplayProductTitle, getProductImageAlt, getProductKeywords } from '@/lib/shopify/presentation'
+import { formatPriceRange, getDisplayProductTitle, getProductImageAlt, getProductKeywords, hasEnglishLettering } from '@/lib/shopify/presentation'
 import { isDemoProduct } from '@/lib/shopify/storefront'
 
 const interests = [
@@ -89,7 +89,7 @@ export function GiftFinder({ products }: { products: ShopifyProduct[] }) {
 }
 
 function GiftResult({ product }: { product: ShopifyProduct }) {
-  const image = product.featuredImage ?? product.images.nodes[0]
+  const image = [product.featuredImage, ...product.images.nodes].find(hasEnglishLettering) ?? null
   const displayTitle = getDisplayProductTitle(product.title)
   return (
     <Link href={`/products/${product.handle}`} className="group flex items-center gap-3 rounded-2xl border border-border p-3 transition hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring">

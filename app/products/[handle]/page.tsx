@@ -2,12 +2,14 @@ import type { Metadata } from 'next'
 import { ArrowUpRight } from 'lucide-react'
 import { ProductDetail } from '@/components/quirkello/product-detail'
 import { getProductByHandle, getSiteOrigin, isDemoProduct } from '@/lib/shopify/storefront'
+import { hasEnglishLettering } from '@/lib/shopify/presentation'
 
 export async function generateMetadata({ params }: { params: Promise<{ handle: string }> }): Promise<Metadata> {
   const { handle } = await params
   const result = await getProductByHandle(handle)
   const product = result.product
   const origin = getSiteOrigin()
+  const productImages = product ? product.images.nodes.filter(hasEnglishLettering) : []
 
   return {
     title: product?.title ?? 'Product details',
@@ -17,7 +19,7 @@ export async function generateMetadata({ params }: { params: Promise<{ handle: s
     openGraph: product ? {
       title: product.title,
       description: product.description.slice(0, 200),
-      images: product.featuredImage ? [product.featuredImage.url] : undefined,
+      images: productImages[0] ? [productImages[0].url] : undefined,
     } : undefined,
   }
 }
@@ -35,12 +37,13 @@ export default async function ProductPage({ params }: { params: Promise<{ handle
 
   const product = result.product
   const origin = getSiteOrigin()
+  const productImages = product.images.nodes.filter(hasEnglishLettering)
   const jsonLd = !isDemoProduct(product) ? {
     '@context': 'https://schema.org',
     '@type': 'Product',
     name: product.title,
     description: product.description,
-    image: product.images.nodes.map((image) => image.url),
+    image: productImages.map((image) => image.url),
     sku: product.variants.nodes.length === 1 ? product.variants.nodes[0].sku : undefined,
     brand: product.vendor ? { '@type': 'Brand', name: product.vendor } : undefined,
     offers: product.variants.nodes.map((variant) => ({
