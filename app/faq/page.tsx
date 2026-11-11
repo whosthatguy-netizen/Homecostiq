@@ -7,7 +7,7 @@ const questions = [
   { question: 'How is checkout handled?', answer: "When the catalog is ready, the bag sends you to Shopify's hosted checkout. Shopify recalculates the order total and confirms payment there." },
   { question: 'When will shipping be calculated?', answer: 'Shipping and taxes are confirmed during Shopify checkout after the required address information is provided. Store shipping rates still need to be configured before launch.' },
   { question: 'Where can I read the return and privacy policies?', answer: 'The policy pages on this site display the current policies published in Shopify. If a policy is missing, it is identified as a setup requirement rather than replaced with invented legal copy.' },
-  { question: 'Are reviews verified?', answer: 'Only reviews from a connected, verifiable review source will be displayed. No customer reviews or product popularity claims are invented.' },
+  { question: 'Are reviews verified?', answer: 'Customer-submitted reviews are approved by the store team before they appear. This system does not verify purchases.' },
 ]
 
 export default function FAQPage() {

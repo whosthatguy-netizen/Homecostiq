@@ -9,6 +9,7 @@ import { formatMoney, getDisplayProductTitle, getProductImageAlt, getShopifyVide
 import { isDemoProduct } from '@/lib/shopify/storefront'
 import { ProductCard } from '@/components/quirkello/product-card'
 import { AddToCartButton } from '@/components/quirkello/add-to-cart-button'
+import { ProductReviews } from '@/components/quirkello/product-reviews'
 
 export function ProductDetail({ product, recommendations }: { product: ShopifyProduct; recommendations: ShopifyProduct[] }) {
   const initialVariant = product.variants.nodes.find((variant) => variant.availableForSale) ?? product.variants.nodes[0] ?? null
@@ -71,12 +72,10 @@ export function ProductDetail({ product, recommendations }: { product: ShopifyPr
             <p className="flex items-start gap-3"><Check className="mt-0.5 size-4 shrink-0 text-secondary" aria-hidden="true" /><span>Variant, availability, and price shown here are supplied by the live Shopify catalog.</span></p>
           </div>
 
-          <section className="mt-8 border-t border-border pt-6" aria-labelledby="reviews-title">
-            <h2 id="reviews-title" className="font-serif text-2xl">Customer reviews</h2>
-            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">Verified reviews will appear when a review provider is connected. No reviews are shown until they can be verified.</p>
-          </section>
         </div>
       </div>
+
+      <ProductReviews productHandle={product.handle} />
 
       {recommendations.length > 0 && (
         <section className="mt-16 border-t border-border pt-12" aria-labelledby="related-title">

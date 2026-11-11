@@ -140,7 +140,7 @@ export function StorefrontHome({ catalog }: { catalog: CatalogResult }) {
         <div className="grid gap-4 rounded-[1.5rem] border border-border p-6 sm:grid-cols-3 sm:p-8">
           <TrustItem title="Real product details" body="Listings and variants are read from Shopify, not invented for the page." />
           <TrustItem title="Shopify checkout" body="Prices and payment are confirmed in Shopify&rsquo; secure checkout." />
-          <TrustItem title="No fake reviews" body="Verified reviews will appear only when a review source is connected." />
+          <TrustItem title="Reviews are reviewed first" body="Customer submissions stay hidden until approved. Purchases are not verified by this system." />
         </div>
       </section>
     </div>
