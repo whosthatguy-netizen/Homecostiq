@@ -13,12 +13,12 @@ import { AddToCartButton } from '@/components/quirkello/add-to-cart-button'
 export function ProductDetail({ product, recommendations }: { product: ShopifyProduct; recommendations: ShopifyProduct[] }) {
   const initialVariant = product.variants.nodes.find((variant) => variant.availableForSale) ?? product.variants.nodes[0] ?? null
   const [selectedValues, setSelectedValues] = useState<Record<string, string>>(() => Object.fromEntries((initialVariant?.selectedOptions ?? []).map((option) => [option.name, option.value])))
-  const [selectedImage, setSelectedImage] = useState(0)
+  const [selectedImage, setSelectedImage] = useState<number | null>(null)
   const optionNames = useMemo(() => Array.from(new Set(product.variants.nodes.flatMap((variant) => variant.selectedOptions.map((option) => option.name)))), [product.variants.nodes])
   const selectedVariant = product.variants.nodes.find((variant) => optionNames.every((name) => variant.selectedOptions.find((option) => option.name === name)?.value === selectedValues[name])) ?? null
   const images = product.images.nodes.length ? product.images.nodes : product.featuredImage ? [product.featuredImage] : []
   const variantImage = selectedVariant?.image
-  const galleryImage = variantImage ?? images[Math.min(selectedImage, Math.max(images.length - 1, 0))] ?? null
+  const galleryImage = (selectedImage === null ? variantImage : images[selectedImage]) ?? images[0] ?? null
   const demo = isDemoProduct(product)
   const video = getShopifyVideo(product)
   const videoSource = video?.sources.find((source) => source.mimeType.startsWith('video/'))
@@ -33,7 +33,7 @@ export function ProductDetail({ product, recommendations }: { product: ShopifyPr
             {galleryImage ? <Image src={galleryImage.url} alt={getProductImageAlt(galleryImage.altText, product.title)} fill priority sizes="(max-width: 1024px) 100vw, 55vw" className="object-cover" /> : <div className="flex h-full items-center justify-center text-sm text-muted-foreground">No product image is available in Shopify.</div>}
             {demo && <span className="absolute left-4 top-4 rounded-full bg-accent px-4 py-2 text-xs font-bold uppercase tracking-wide">Demo listing — not for sale</span>}
           </div>
-          {images.length > 1 && <div className="mt-3 flex gap-3 overflow-x-auto">{images.map((image, index) => <button key={image.url} type="button" onClick={() => setSelectedImage(index)} className={`relative size-20 shrink-0 overflow-hidden rounded-xl border-2 ${selectedImage === index ? 'border-secondary' : 'border-border'}`} aria-label={`Show image ${index + 1} of ${displayTitle}`}><Image src={image.url} alt={getProductImageAlt(image.altText, product.title)} fill sizes="80px" className="object-cover" /></button>)}</div>}
+          {images.length > 1 && <div className="mt-3 flex gap-3 overflow-x-auto">{images.map((image, index) => <button key={image.url} type="button" onClick={() => setSelectedImage(index)} className={`relative size-20 shrink-0 overflow-hidden rounded-xl border-2 ${galleryImage?.url === image.url ? 'border-secondary' : 'border-border'}`} aria-label={`Show image ${index + 1} of ${displayTitle}`}><Image src={image.url} alt={getProductImageAlt(image.altText, product.title)} fill sizes="80px" className="object-cover" /></button>)}</div>}
           {videoSource && <div className="mt-5 overflow-hidden rounded-[1.5rem] bg-muted"><video controls preload="metadata" poster={video?.previewImage?.url} className="aspect-video w-full object-cover" aria-label={video?.alt || `Product demonstration for ${displayTitle}`}><source src={videoSource.url} type={videoSource.mimeType} />Your browser does not support the video element.</video></div>}
         </div>
 
@@ -52,7 +52,10 @@ export function ProductDetail({ product, recommendations }: { product: ShopifyPr
             const values = Array.from(new Set(product.variants.nodes.flatMap((variant) => variant.selectedOptions.filter((option) => option.name === name).map((option) => option.value))))
             return (
               <label key={name} className="mt-6 flex flex-col gap-2 text-sm font-semibold">{name}
-                <select value={selectedValues[name] ?? ''} onChange={(event) => setSelectedValues((current) => ({ ...current, [name]: event.target.value }))} className="min-h-12 rounded-xl border border-input bg-background px-4 font-normal outline-none focus:ring-2 focus:ring-ring">
+                <select value={selectedValues[name] ?? ''} onChange={(event) => {
+                  setSelectedValues((current) => ({ ...current, [name]: event.target.value }))
+                  setSelectedImage(null)
+                }} className="min-h-12 rounded-xl border border-input bg-background px-4 font-normal outline-none focus:ring-2 focus:ring-ring">
                   {values.map((value) => <option key={value} value={value}>{value}</option>)}
                 </select>
               </label>
